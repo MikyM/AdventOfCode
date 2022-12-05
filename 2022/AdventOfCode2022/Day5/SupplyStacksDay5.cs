@@ -157,19 +157,18 @@ public partial class SupplyStacksDay5
         
         public CraneInstructionSet(IEnumerable<string> unparsedInstructions)
         {
-            var actual = new List<CraneInstruction>();
-            foreach (var line in unparsedInstructions)
+            var enumerated = unparsedInstructions.ToArray();
+            UnderlyingArray = new CraneInstruction[enumerated.Length];
+            for (var i = 0; i < enumerated.Length; i++)
             {
-                var matches = ExtractNumbersRegex().Matches(line);
-                actual.Add(new CraneInstruction
+                var matches = ExtractNumbersRegex().Matches(enumerated[i]);
+                UnderlyingArray[i] = new CraneInstruction
                 {
                     CrateCount = int.Parse(matches[0].Value), 
                     OriginStackId = int.Parse(matches[1].Value), 
                     DestinationStackId = int.Parse(matches[2].Value)
-                });
+                };
             }
-            
-            UnderlyingArray = actual.ToArray();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
