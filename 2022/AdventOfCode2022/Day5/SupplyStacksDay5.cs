@@ -34,63 +34,72 @@ public partial class SupplyStacksDay5
     public interface ICrane
     {
         void MoveCrates(ref SupplyStacks supplyStacks, ref CraneInstructionSet instructionSet);
+        void MoveCrate(ref SupplyStacks supplyStacks, ref CraneInstruction craneInstruction);
     }
     
-    public sealed class CrateMover9001 : ICrane
+    public abstract class Crane : ICrane
     {
         public void MoveCrates(ref SupplyStacks supplyStacks, ref CraneInstructionSet instructionSet)
         {
-            foreach (var instruction in instructionSet)
+            foreach (ref var instruction in instructionSet.UnderlyingArray.AsSpan())
             {
-                if (!supplyStacks.TryGetValue(instruction.OriginStackId, out var originStack))
-                {
-                    Console.WriteLine(JsonSerializer.Serialize(instruction));
-                    throw new InvalidOperationException();
-                }
-
-                if (!supplyStacks.TryGetValue(instruction.DestinationStackId, out var destinationStack))
-                {
-                    Console.WriteLine(JsonSerializer.Serialize(instruction));
-                    throw new InvalidOperationException();
-                }
-
-                var popped = new List<SupplyCrate>();
-                for (var i = 0; i < instruction.CrateCount; i++)
-                {
-                    if (originStack.TryPop(out var crate))
-                        popped.Add(crate);
-                }
-
-                popped.Reverse();
-                foreach (var crate in popped)
-                    destinationStack.Push(crate);
+                var craneInstruction = instruction;
+                MoveCrate(ref supplyStacks, ref craneInstruction);
             }
+        }
+        
+        public abstract void MoveCrate(ref SupplyStacks supplyStacks, ref CraneInstruction craneInstruction);
+    }
+    
+    public sealed class CrateMover9001 : Crane
+    {
+        public override void MoveCrate(ref SupplyStacks supplyStacks, ref CraneInstruction instruction)
+        {
+            if (!supplyStacks.TryGetValue(instruction.OriginStackId, out var originStack))
+            {
+                Console.WriteLine(JsonSerializer.Serialize(instruction));
+                throw new InvalidOperationException();
+            }
+
+            if (!supplyStacks.TryGetValue(instruction.DestinationStackId, out var destinationStack))
+            {
+                Console.WriteLine(JsonSerializer.Serialize(instruction));
+                throw new InvalidOperationException();
+            }
+
+            var popped = new List<SupplyCrate>();
+            for (var i = 0; i < instruction.CrateCount; i++)
+            {
+                if (originStack.TryPop(out var crate))
+                    popped.Add(crate);
+            }
+
+            popped.Reverse();
+            foreach (var crate in popped)
+                destinationStack.Push(crate);
         }
     }
     
-    public sealed class CrateMover9000 : ICrane
+    public sealed class CrateMover9000 : Crane
     {
-        public void MoveCrates(ref SupplyStacks supplyStacks, ref CraneInstructionSet instructionSet)
+        public override void MoveCrate(ref SupplyStacks supplyStacks, ref CraneInstruction instruction)
         {
-            foreach (var instruction in instructionSet)
+            if (!supplyStacks.TryGetValue(instruction.OriginStackId, out var originStack))
             {
-                if (!supplyStacks.TryGetValue(instruction.OriginStackId, out var originStack))
-                {
-                    Console.WriteLine(JsonSerializer.Serialize(instruction));
-                    throw new InvalidOperationException();
-                }
+                Console.WriteLine(JsonSerializer.Serialize(instruction));
+                throw new InvalidOperationException();
+            }
 
-                if (!supplyStacks.TryGetValue(instruction.DestinationStackId, out var destinationStack))
-                {
-                    Console.WriteLine(JsonSerializer.Serialize(instruction));
-                    throw new InvalidOperationException();
-                }
+            if (!supplyStacks.TryGetValue(instruction.DestinationStackId, out var destinationStack))
+            {
+                Console.WriteLine(JsonSerializer.Serialize(instruction));
+                throw new InvalidOperationException();
+            }
 
-                for (var i = 0; i < instruction.CrateCount; i++)
-                {
-                    if (originStack.TryPop(out var crate))
-                        destinationStack.Push(crate);
-                }
+            for (var i = 0; i < instruction.CrateCount; i++)
+            {
+                if (originStack.TryPop(out var crate))
+                    destinationStack.Push(crate);
             }
         }
     }
@@ -139,9 +148,9 @@ public partial class SupplyStacksDay5
         
     }
     
-    public readonly partial struct CraneInstructionSet : IEnumerable<CraneInstruction>
+    public readonly partial struct CraneInstructionSet : IEnumerable
     {
-        private readonly IEnumerable<CraneInstruction> _underlyingEnumerable;
+        public readonly CraneInstruction[] UnderlyingArray;
 
         [GeneratedRegex(@"\d+")]
         private static partial Regex ExtractNumbersRegex();
@@ -159,14 +168,12 @@ public partial class SupplyStacksDay5
                     DestinationStackId = int.Parse(matches[2].Value)
                 });
             }
-            _underlyingEnumerable = actual;
+            
+            UnderlyingArray = actual.ToArray();
         }
 
-        public IEnumerator<CraneInstruction> GetEnumerator()
-            => _underlyingEnumerable.GetEnumerator();
-
         IEnumerator IEnumerable.GetEnumerator()
-            => _underlyingEnumerable.GetEnumerator();
+            => UnderlyingArray.GetEnumerator();
     }
 
     public readonly struct CraneInstruction
