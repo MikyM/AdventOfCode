@@ -186,15 +186,7 @@ public partial class SupplyStacksDay5
         public readonly int CrateCount;
     }
     
-    public readonly struct SupplyCrate
-    {
-        public SupplyCrate(char id)
-        {
-            Id = id;
-        }
-
-        public readonly char Id;
-    }
+    public sealed record SupplyCrate(char Id) { }
     
     public sealed class SupplyStack : Stack<SupplyCrate>
     {
