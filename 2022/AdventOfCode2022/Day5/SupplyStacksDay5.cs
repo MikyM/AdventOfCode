@@ -43,8 +43,7 @@ public partial class SupplyStacksDay5
         {
             foreach (ref var instruction in instructionSet.UnderlyingArray.AsSpan())
             {
-                var craneInstruction = instruction;
-                MoveCrate(ref supplyStacks, ref craneInstruction);
+                MoveCrate(ref supplyStacks, ref instruction);
             }
         }
         
@@ -67,15 +66,14 @@ public partial class SupplyStacksDay5
                 throw new InvalidOperationException();
             }
 
-            var popped = new List<SupplyCrate>();
-            for (var i = 0; i < instruction.CrateCount; i++)
+            var popped = new SupplyCrate[instruction.CrateCount];
+            for (var i = instruction.CrateCount - 1; i > -1; i--)
             {
                 if (originStack.TryPop(out var crate))
-                    popped.Add(crate);
+                    popped[i] = crate;
             }
-
-            popped.Reverse();
-            foreach (var crate in popped)
+            
+            foreach (ref var crate in popped.AsSpan())
                 destinationStack.Push(crate);
         }
     }
@@ -162,12 +160,11 @@ public partial class SupplyStacksDay5
             for (var i = 0; i < enumerated.Length; i++)
             {
                 var matches = ExtractNumbersRegex().Matches(enumerated[i]);
-                UnderlyingArray[i] = new CraneInstruction
-                {
-                    CrateCount = int.Parse(matches[0].Value), 
-                    OriginStackId = int.Parse(matches[1].Value), 
-                    DestinationStackId = int.Parse(matches[2].Value)
-                };
+                UnderlyingArray[i] = new CraneInstruction(
+                    int.Parse(matches[1].Value), 
+                    int.Parse(matches[2].Value),
+                    int.Parse(matches[0].Value)
+                    );
             }
         }
 
@@ -184,9 +181,9 @@ public partial class SupplyStacksDay5
             CrateCount = crateCount;
         }
 
-        public int OriginStackId { get; init; }
-        public int DestinationStackId { get; init; }
-        public int CrateCount { get; init; }
+        public readonly int OriginStackId;
+        public readonly int DestinationStackId;
+        public readonly int CrateCount;
     }
     
     public readonly struct SupplyCrate
@@ -195,8 +192,8 @@ public partial class SupplyStacksDay5
         {
             Id = id;
         }
-        
-        public char Id { get; init; }
+
+        public readonly char Id;
     }
     
     public sealed class SupplyStack : Stack<SupplyCrate>
