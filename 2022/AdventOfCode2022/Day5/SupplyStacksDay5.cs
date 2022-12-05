@@ -118,7 +118,7 @@ public partial class SupplyStacksDay5
             var initialStackState = enumerated.TakeWhile(x => x.Contains('['));
 
             // actual parse
-            var stacks = indexes.ToDictionary(x => x.Key, x => new SupplyStack { Id = x.Value });
+            var stacks = indexes.ToDictionary(x => x.Key, x => new SupplyStack(x.Value));
             
             foreach (var line in initialStackState.Reverse().ToArray())
             {
@@ -127,7 +127,7 @@ public partial class SupplyStacksDay5
                     if (!char.IsLetter(line[i]))
                         continue;
                     
-                    stacks[i].Push(new SupplyCrate { Id = line[i] } );
+                    stacks[i].Push(new SupplyCrate(line[i]) );
                 }
             }
             
@@ -171,6 +171,13 @@ public partial class SupplyStacksDay5
 
     public readonly struct CraneInstruction
     {
+        public CraneInstruction(int originStackId, int destinationStackId, int crateCount)
+        {
+            OriginStackId = originStackId;
+            DestinationStackId = destinationStackId;
+            CrateCount = crateCount;
+        }
+
         public int OriginStackId { get; init; }
         public int DestinationStackId { get; init; }
         public int CrateCount { get; init; }
@@ -178,13 +185,19 @@ public partial class SupplyStacksDay5
     
     public readonly struct SupplyCrate
     {
+        public SupplyCrate(char id)
+        {
+            Id = id;
+        }
+        
         public char Id { get; init; }
     }
     
     public sealed class SupplyStack : Stack<SupplyCrate>
     {
-        public SupplyStack()
+        public SupplyStack(int id)
         {
+            Id = id;
         }
         
         public SupplyStack(SupplyStack stack)
